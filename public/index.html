@@ -1,192 +1,297 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Advanced Image Editor</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      max-width: 700px;
-      margin: 40px auto;
-      padding: 0 15px;
-      background: #f7f9fc;
-      color: #222;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-      color: #005a9e;
-    }
-    label {
-      display: block;
-      margin: 15px 0 5px;
-      font-weight: 600;
-    }
-    input[type="file"],
-    input[type="number"],
-    select,
-    textarea {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-      font-size: 1rem;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      transition: border-color 0.3s ease;
-    }
-    input[type="file"]:focus,
-    input[type="number"]:focus,
-    select:focus,
-    textarea:focus {
-      outline: none;
-      border-color: #005a9e;
-      box-shadow: 0 0 5px #005a9eaa;
-    }
-    textarea {
-      resize: vertical;
-      min-height: 100px;
-      font-family: monospace;
-      font-size: 0.9rem;
-    }
-    button {
-      margin-top: 25px;
-      background-color: #005a9e;
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      font-size: 1.1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      width: 100%;
-    }
-    button:hover {
-      background-color: #003f6b;
-    }
-    .warning {
-      background-color: #fff4f4;
-      border: 1px solid #e64545;
-      color: #e64545;
-      padding: 12px 20px;
-      margin-bottom: 30px;
-      border-radius: 6px;
-      font-weight: 600;
-    }
-    #previewContainer {
-      margin-top: 40px;
-      text-align: center;
-      display: none;
-    }
-    #previewImage {
-      max-width: 100%;
-      border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-    }
-    #downloadLink {
-      display: inline-block;
-      margin-top: 15px;
-      padding: 12px 20px;
-      background-color: #007acc;
-      color: white;
-      border-radius: 6px;
-      text-decoration: none;
-      font-weight: 600;
-      transition: background-color 0.3s ease;
-    }
-    #downloadLink:hover {
-      background-color: #005f99;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Image Editor with Code Injection</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 0 20px;
+    background: #f0f4f8;
+    color: #222;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #0066cc;
+  }
+  label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+  }
+  input[type="file"],
+  input[type="number"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 6px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: border-color 0.3s ease;
+  }
+  input[type="file"]:focus,
+  input[type="number"]:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 5px #0066cc88;
+  }
+  textarea {
+    min-height: 120px;
+    font-family: monospace;
+    font-size: 0.9rem;
+  }
+  button {
+    margin-top: 25px;
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #004a99;
+  }
+  .warning {
+    background: #fff0f0;
+    border: 1px solid #d9534f;
+    color: #d9534f;
+    padding: 15px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    margin-bottom: 30px;
+  }
+  #previewSection {
+    margin-top: 40px;
+    text-align: center;
+    display: none;
+  }
+  #previewImage {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  #downloadLink {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 12px 25px;
+    background: #28a745;
+    color: white;
+    border-radius: 6px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+  }
+  #downloadLink:hover {
+    background: #1e7e34;
+  }
+  #advancedSettingsToggle {
+    margin-top: 20px;
+    cursor: pointer;
+    color: #0066cc;
+    text-decoration: underline;
+    user-select: none;
+  }
+  #advancedSettings {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 8px;
+    display: none;
+    background: white;
+  }
+  .preset-button {
+    margin: 5px 5px 5px 0;
+    padding: 6px 10px;
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  .preset-button:hover {
+    background: #cce5ff;
+    border-color: #66a3ff;
+  }
+</style>
 </head>
 <body>
-  <h1>Advanced Image Editor</h1>
 
-  <div class="warning">
-    <p><strong>Warning:</strong> Embedding executable code in images poses significant security risks and is not recommended. Use only safe metadata embedding.</p>
+<h1>Advanced Image Editor with Code Injection</h1>
+
+<div class="warning">
+  <p><strong>Warning:</strong> Embedding executable code in images is unsafe, not widely supported, and may not auto-run in most viewers. Use responsibly.</p>
+</div>
+
+<form id="imageForm" enctype="multipart/form-data">
+  <label for="imageInput">Select Image <span style="color: red">*</span></label>
+  <input type="file" id="imageInput" name="image" accept="image/*" required />
+
+  <label for="widthInput">Width (optional; leave empty for original)</label>
+  <input type="number" id="widthInput" name="width" min="1" placeholder="Auto" />
+
+  <label for="heightInput">Height (optional; leave empty for original)</label>
+  <input type="number" id="heightInput" name="height" min="1" placeholder="Auto" />
+
+  <label for="formatSelect">Output Format</label>
+  <select id="formatSelect" name="format" required>
+    <option value="jpeg">JPEG</option>
+    <option value="png">PNG</option>
+    <option value="webp">WebP</option>
+  </select>
+
+  <button type="button" id="advancedSettingsToggle">Show Advanced Settings ▼</button>
+
+  <div id="advancedSettings">
+    <label for="metadataInput">Metadata (optional plain text)</label>
+    <textarea id="metadataInput" name="metadata" placeholder="Add any text to embed in image metadata"></textarea>
+
+    <label for="codeInjectorInput">Code Injector (optional code string)</label>
+    <textarea id="codeInjectorInput" name="codeInjector" placeholder="Add code to embed in image (does not auto-run except with 'auto execute' option)"></textarea>
+
+    <label>
+      <input type="checkbox" id="autoExecCheckbox" name="autoExec" value="true" />
+      Automatically execute script once image is opened/previewed (embedding hint only)
+    </label>
+
+    <h3>Presets</h3>
+    <div>
+      <button type="button" class="preset-button" data-preset="none">No Preset</button>
+      <button type="button" class="preset-button" data-preset="calculator">Calculator Launcher</button>
+      <button type="button" class="preset-button" data-preset="alert">Simple Alert</button>
+      <button type="button" class="preset-button" data-preset="url">Embed URL</button>
+    </div>
   </div>
 
-  <form id="uploadForm" enctype="multipart/form-data">
-    <label for="image">Select Image <span style="color:red">*</span></label>
-    <input type="file" id="image" name="image" accept="image/*" required />
+  <button type="submit">Process Image</button>
+</form>
 
-    <label for="width">Width (leave blank for original)</label>
-    <input type="number" id="width" name="width" min="1" placeholder="Auto" />
+<section id="previewSection">
+  <h2>Preview & Download</h2>
+  <img id="previewImage" alt="Processed Image Preview" />
+  <br />
+  <a id="downloadLink" href="#" download="processed-image">Download Image</a>
+</section>
 
-    <label for="height">Height (leave blank for original)</label>
-    <input type="number" id="height" name="height" min="1" placeholder="Auto" />
+<script>
+  const form = document.getElementById('imageForm');
+  const previewSection = document.getElementById('previewSection');
+  const previewImage = document.getElementById('previewImage');
+  const downloadLink = document.getElementById('downloadLink');
 
-    <label for="format">Output Format</label>
-    <select id="format" name="format" required>
-      <option value="jpeg">JPEG</option>
-      <option value="png">PNG</option>
-      <option value="webp">WebP</option>
-    </select>
+  const advancedToggle = document.getElementById('advancedSettingsToggle');
+  const advancedSettings = document.getElementById('advancedSettings');
 
-    <label for="metadata">Metadata (optional plain text)</label>
-    <textarea id="metadata" name="metadata" placeholder="Add any text or safe code snippet to embed"></textarea>
+  const metadataInput = document.getElementById('metadataInput');
+  const codeInjectorInput = document.getElementById('codeInjectorInput');
+  const autoExecCheckbox = document.getElementById('autoExecCheckbox');
 
-    <button type="submit">Process Image</button>
-  </form>
+  advancedToggle.addEventListener('click', () => {
+    if (advancedSettings.style.display === 'none' || advancedSettings.style.display === '') {
+      advancedSettings.style.display = 'block';
+      advancedToggle.textContent = 'Hide Advanced Settings ▲';
+    } else {
+      advancedSettings.style.display = 'none';
+      advancedToggle.textContent = 'Show Advanced Settings ▼';
+    }
+  });
 
-  <div id="previewContainer">
-    <h2>Preview & Download</h2>
-    <img id="previewImage" alt="Processed Image Preview" />
-    <br />
-    <a id="downloadLink" href="#" download="processed-image">Download Image</a>
-  </div>
+  // Preset code and metadata values
+  const presets = {
+    none: {
+      metadata: '',
+      codeInjector: '',
+      autoExec: false,
+    },
+    calculator: {
+      metadata: 'Launches calculator app on supported viewers',
+      codeInjector: `window.open('calc.exe'); // WARNING: Unsafe and will not run in normal viewers`,
+      autoExec: true,
+    },
+    alert: {
+      metadata: 'Show alert on open',
+      codeInjector: `alert("Hello from embedded code!");`,
+      autoExec: true,
+    },
+    url: {
+      metadata: 'Visit our site',
+      codeInjector: `window.open('https://example.com');`,
+      autoExec: false,
+    }
+  };
 
-  <script>
-    const form = document.getElementById('uploadForm');
-    const previewImage = document.getElementById('previewImage');
-    const previewContainer = document.getElementById('previewContainer');
-    const downloadLink = document.getElementById('downloadLink');
+  document.querySelectorAll('.preset-button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = btn.getAttribute('data-preset');
+      if (!presets[p]) return;
+      metadataInput.value = presets[p].metadata;
+      codeInjectorInput.value = presets[p].codeInjector;
+      autoExecCheckbox.checked = presets[p].autoExec;
+    });
+  });
 
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-      const fileInput = document.getElementById('image');
-      if (!fileInput.files.length) {
-        alert('Please select an image file.');
+    const fileInput = document.getElementById('imageInput');
+    if (fileInput.files.length === 0) {
+      alert('Please select an image file');
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append('image', fileInput.files[0]);
+    formData.append('width', document.getElementById('widthInput').value.trim());
+    formData.append('height', document.getElementById('heightInput').value.trim());
+    formData.append('format', document.getElementById('formatSelect').value);
+
+    formData.append('metadata', metadataInput.value.trim());
+    formData.append('codeInjector', codeInjectorInput.value.trim());
+    formData.append('autoExec', autoExecCheckbox.checked ? 'true' : 'false');
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        alert('Error: ' + text);
         return;
       }
 
-      const formData = new FormData(form);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
 
-      // Disable button while processing
-      const button = form.querySelector('button[type="submit"]');
-      button.disabled = true;
-      button.textContent = 'Processing...';
+      previewImage.src = url;
+      downloadLink.href = url;
 
-      try {
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
+      // Suggest filename extension based on format
+      const format = document.getElementById('formatSelect').value;
+      downloadLink.download = `processed-image.${format}`;
 
-        if (!response.ok) {
-          alert('Failed to process image.');
-          button.disabled = false;
-          button.textContent = 'Process Image';
-          return;
-        }
+      previewSection.style.display = 'block';
+      window.scrollTo({ top: previewSection.offsetTop, behavior: 'smooth' });
 
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
+    } catch (error) {
+      alert('Unexpected error: ' + error.message);
+    }
+  });
+</script>
 
-        previewImage.src = objectUrl;
-        downloadLink.href = objectUrl;
-
-        previewContainer.style.display = 'block';
-
-      } catch (err) {
-        alert('Error processing image.');
-        console.error(err);
-      } finally {
-        button.disabled = false;
-        button.textContent = 'Process Image';
-      }
-    });
-  </script>
 </body>
 </html>
