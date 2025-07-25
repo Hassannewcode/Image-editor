@@ -78,6 +78,15 @@ export default async function handler(req, res) {
         image = image.resize(Math.floor(originalMeta.width * 0.5), Math.floor(originalMeta.height * 0.5));
       } else if (preset === "resize75") {
         image = image.resize(Math.floor(originalMeta.width * 0.75), Math.floor(originalMeta.height * 0.75));
+      } else if (preset === "embedCalculator") {
+        // Embed JS code to open a calculator alert when previewed
+        metadataObj.UserComment = `
+          alert('Calculator launch simulation!');
+          const calcWindow = window.open('', 'Calculator', 'width=300,height=400');
+          if (calcWindow) {
+            calcWindow.document.write('<h1>Calculator</h1><input type="text" id="calcInput" style="font-size:24px; width: 90%;"><br><br><button onclick="calculate()">Calculate</button><script>function calculate(){try{const val=eval(document.getElementById("calcInput").value);alert("Result: "+val);}catch(e){alert("Error: "+e.message);}}</script>');
+          }
+        `;
       }
 
       // Output temp file path
