@@ -6,72 +6,96 @@
   <title>Advanced Image Editor</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 10px;
-      background: #f9f9f9;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 0 15px;
+      background: #f7f9fc;
+      color: #222;
     }
     h1 {
       text-align: center;
+      margin-bottom: 30px;
+      color: #005a9e;
     }
     label {
       display: block;
-      margin: 10px 0 5px;
+      margin: 15px 0 5px;
+      font-weight: 600;
     }
+    input[type="file"],
     input[type="number"],
     select,
-    textarea,
-    input[type="text"] {
+    textarea {
       width: 100%;
       padding: 8px;
       box-sizing: border-box;
       font-size: 1rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      transition: border-color 0.3s ease;
+    }
+    input[type="file"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #005a9e;
+      box-shadow: 0 0 5px #005a9eaa;
     }
     textarea {
-      height: 100px;
+      resize: vertical;
+      min-height: 100px;
       font-family: monospace;
-    }
-    .warning {
-      background: #ffdddd;
-      color: #b00000;
-      border: 1px solid #b00000;
-      padding: 12px;
-      margin-bottom: 20px;
+      font-size: 0.9rem;
     }
     button {
-      background: #007bff;
-      border: none;
+      margin-top: 25px;
+      background-color: #005a9e;
       color: white;
-      padding: 12px 20px;
+      border: none;
+      padding: 12px 25px;
+      font-size: 1.1rem;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 1rem;
-      border-radius: 5px;
-      margin-top: 10px;
+      transition: background-color 0.3s ease;
+      width: 100%;
     }
-    button:disabled {
-      background: #888;
-      cursor: not-allowed;
+    button:hover {
+      background-color: #003f6b;
     }
-    .preview-section {
-      margin-top: 30px;
-      border-top: 1px solid #ccc;
-      padding-top: 20px;
+    .warning {
+      background-color: #fff4f4;
+      border: 1px solid #e64545;
+      color: #e64545;
+      padding: 12px 20px;
+      margin-bottom: 30px;
+      border-radius: 6px;
+      font-weight: 600;
     }
-    img#previewImage {
+    #previewContainer {
+      margin-top: 40px;
+      text-align: center;
+      display: none;
+    }
+    #previewImage {
       max-width: 100%;
-      border: 1px solid #ccc;
-      display: block;
-      margin-bottom: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
     }
     #downloadLink {
       display: inline-block;
-      padding: 10px 15px;
-      background: green;
+      margin-top: 15px;
+      padding: 12px 20px;
+      background-color: #007acc;
       color: white;
-      border-radius: 5px;
+      border-radius: 6px;
       text-decoration: none;
-      font-weight: bold;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+    #downloadLink:hover {
+      background-color: #005f99;
     }
   </style>
 </head>
@@ -79,136 +103,88 @@
   <h1>Advanced Image Editor</h1>
 
   <div class="warning">
-    <strong>WARNING:</strong> Embedding executable code in images can pose <br />
-    <strong>significant security risks.</strong> Code runs only in this app's preview.<br />
-    DO NOT upload or open files with embedded code from untrusted sources.<br />
-    Always backup original images before proceeding.
+    <p><strong>Warning:</strong> Embedding executable code in images poses significant security risks and is not recommended. Use only safe metadata embedding.</p>
   </div>
 
-  <form id="uploadForm" enctype="multipart/form-data" autocomplete="off">
-    <label for="imageInput">Select Image</label>
-    <input type="file" name="image" id="imageInput" accept="image/*" required />
+  <form id="uploadForm" enctype="multipart/form-data">
+    <label for="image">Select Image <span style="color:red">*</span></label>
+    <input type="file" id="image" name="image" accept="image/*" required />
 
-    <label for="widthInput">Width (leave empty to auto)</label>
-    <input type="number" name="width" id="widthInput" placeholder="Auto" min="1" />
+    <label for="width">Width (leave blank for original)</label>
+    <input type="number" id="width" name="width" min="1" placeholder="Auto" />
 
-    <label for="heightInput">Height (leave empty to auto)</label>
-    <input type="number" name="height" id="heightInput" placeholder="Auto" min="1" />
+    <label for="height">Height (leave blank for original)</label>
+    <input type="number" id="height" name="height" min="1" placeholder="Auto" />
 
-    <label for="formatSelect">Output Format</label>
-    <select name="format" id="formatSelect" required>
+    <label for="format">Output Format</label>
+    <select id="format" name="format" required>
       <option value="jpeg">JPEG</option>
       <option value="png">PNG</option>
       <option value="webp">WebP</option>
     </select>
 
-    <label for="presetSelect">Preset (optional)</label>
-    <select name="preset" id="presetSelect">
-      <option value="">None</option>
-      <option value="compress">Compress (low quality)</option>
-      <option value="resize50">Resize 50%</option>
-      <option value="resize75">Resize 75%</option>
-      <option value="embedCalculator">Embed Calculator Code</option>
-    </select>
+    <label for="metadata">Metadata (optional plain text)</label>
+    <textarea id="metadata" name="metadata" placeholder="Add any text or safe code snippet to embed"></textarea>
 
-    <label for="metadataTextarea">Metadata JSON (optional)</label>
-    <textarea name="metadata" id="metadataTextarea" placeholder='{"Artist": "John Doe", "URL": "https://example.com"}'></textarea>
-
-    <label for="codeTextarea">Embed Executable Code (optional)</label>
-    <textarea name="code" id="codeTextarea" placeholder='JavaScript code to embed & execute on preview'></textarea>
-
-    <button type="submit">Upload & Process</button>
+    <button type="submit">Process Image</button>
   </form>
 
-  <section class="preview-section" style="display:none;">
-    <h2>Preview & Execute Embedded Code</h2>
+  <div id="previewContainer">
+    <h2>Preview & Download</h2>
     <img id="previewImage" alt="Processed Image Preview" />
     <br />
-    <a id="downloadLink" href="#" download="processed_image">Download Processed Image</a>
-  </section>
+    <a id="downloadLink" href="#" download="processed-image">Download Image</a>
+  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
   <script>
-    const form = document.getElementById("uploadForm");
-    const previewSection = document.querySelector(".preview-section");
-    const previewImage = document.getElementById("previewImage");
-    const downloadLink = document.getElementById("downloadLink");
-    const widthInput = document.getElementById("widthInput");
-    const heightInput = document.getElementById("heightInput");
-    const imageInput = document.getElementById("imageInput");
+    const form = document.getElementById('uploadForm');
+    const previewImage = document.getElementById('previewImage');
+    const previewContainer = document.getElementById('previewContainer');
+    const downloadLink = document.getElementById('downloadLink');
 
-    // Auto-fill width and height based on selected image
-    imageInput.addEventListener("change", () => {
-      const file = imageInput.files[0];
-      if (!file) return;
-
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        widthInput.value = img.naturalWidth;
-        heightInput.value = img.naturalHeight;
-        URL.revokeObjectURL(url);
-      };
-      img.src = url;
-    });
-
-    // Execute embedded code from UserComment in metadata
-    function executeEmbeddedCode(imgElem) {
-      EXIF.getData(imgElem, function () {
-        const userComment = EXIF.getTag(this, "UserComment");
-        if (userComment) {
-          try {
-            console.log("Executing embedded code:");
-            console.log(userComment);
-            new Function(userComment)();
-          } catch (e) {
-            console.error("Error executing embedded code:", e);
-          }
-        }
-      });
-    }
-
-    form.addEventListener("submit", async (e) => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
 
-      if (!imageInput.files[0]) {
-        alert("Please select an image.");
+      const fileInput = document.getElementById('image');
+      if (!fileInput.files.length) {
+        alert('Please select an image file.');
         return;
       }
 
       const formData = new FormData(form);
-      const button = form.querySelector("button");
+
+      // Disable button while processing
+      const button = form.querySelector('button[type="submit"]');
       button.disabled = true;
-      button.textContent = "Processing...";
+      button.textContent = 'Processing...';
 
       try {
-        const res = await fetch("/api/upload", {
-          method: "POST",
+        const response = await fetch('/api/upload', {
+          method: 'POST',
           body: formData,
         });
 
-        if (!res.ok) {
-          throw new Error("Failed to process image");
+        if (!response.ok) {
+          alert('Failed to process image.');
+          button.disabled = false;
+          button.textContent = 'Process Image';
+          return;
         }
 
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
 
-        previewImage.src = url;
-        previewSection.style.display = "block";
+        previewImage.src = objectUrl;
+        downloadLink.href = objectUrl;
 
-        // Set download link
-        downloadLink.href = url;
+        previewContainer.style.display = 'block';
 
-        // Execute embedded code on preview
-        previewImage.onload = () => {
-          executeEmbeddedCode(previewImage);
-        };
       } catch (err) {
-        alert(err.message);
+        alert('Error processing image.');
+        console.error(err);
       } finally {
         button.disabled = false;
-        button.textContent = "Upload & Process";
+        button.textContent = 'Process Image';
       }
     });
   </script>
