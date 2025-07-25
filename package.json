@@ -1,7 +1,6 @@
 {
-  "name": "image-editor-backend",
+  "name": "advanced-image-editor",
   "version": "1.0.0",
-  "main": "api/upload.js",
   "scripts": {
     "start": "vercel dev"
   },
