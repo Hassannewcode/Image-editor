@@ -5,7 +5,7 @@ import { exiftool } from 'exiftool-vendored';
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // Required for formidable
   },
 };
 
@@ -14,48 +14,64 @@ export default async function handler(req, res) {
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error('Form parse error:', err);
-      res.status(500).send('Form parse error');
+      res.status(500).send('Form parsing error: ' + err.message);
       return;
     }
 
-    const file = files.image;
-    if (!file) {
-      res.status(400).send('No image file uploaded');
+    if (!files.image) {
+      res.status(400).send('No image uploaded');
       return;
     }
 
-    const { width, height, format, metadata } = fields;
+    const { width, height, format, metadata, quality, embedCode } = fields;
 
     try {
-      const buffer = await fs.promises.readFile(file.filepath);
+      const fileBuffer = await fs.promises.readFile(files.image.filepath);
 
-      let outputBuffer = await sharp(buffer)
+      // Resize & convert
+      let img = sharp(fileBuffer)
         .resize(parseInt(width), parseInt(height))
-        .toFormat(format)
-        .toBuffer();
+        .toFormat(format, { quality: parseInt(quality) });
 
+      let outputBuffer = await img.toBuffer();
+
+      // Prepare metadata JSON
+      let metaJSON = {};
       if (metadata) {
-        const tempPath = `/tmp/${file.newFilename}.${format}`;
-        await fs.promises.writeFile(tempPath, outputBuffer);
-
         try {
-          const jsonMetadata = JSON.parse(metadata);
-          await exiftool.write(tempPath, jsonMetadata);
-        } catch (metaErr) {
-          console.warn('Metadata JSON parse or write error:', metaErr);
-          // Continue without failing on metadata error
+          metaJSON = JSON.parse(metadata);
+        } catch {
+          return res.status(400).send('Invalid JSON metadata');
         }
-
-        outputBuffer = await fs.promises.readFile(tempPath);
-        await fs.promises.unlink(tempPath);
       }
 
+      // If embedCode is false/unchecked, sanitize scripts
+      if (!embedCode || embedCode === 'false' || embedCode === undefined) {
+        for (const key in metaJSON) {
+          if (typeof metaJSON[key] === 'string' && metaJSON[key].toLowerCase().includes('<script')) {
+            metaJSON[key] = '[Removed dangerous script]';
+          }
+        }
+      }
+
+      // Write metadata using exiftool (write to temp file)
+      const tmpPath = `/tmp/${files.image.newFilename}.${format}`;
+      await fs.promises.writeFile(tmpPath, outputBuffer);
+
+      try {
+        await exiftool.write(tmpPath, metaJSON);
+      } catch (exifErr) {
+        console.warn('Exiftool write error:', exifErr);
+      }
+
+      const finalBuffer = await fs.promises.readFile(tmpPath);
+      await fs.promises.unlink(tmpPath);
+
       res.setHeader('Content-Type', `image/${format}`);
-      res.send(outputBuffer);
-    } catch (procErr) {
-      console.error('Image processing error:', procErr);
-      res.status(500).send('Image processing error');
+      res.send(finalBuffer);
+    } catch (processErr) {
+      console.error(processErr);
+      res.status(500).send('Error processing image');
     }
   });
 }
