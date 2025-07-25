@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Image Editor</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 1rem 2rem;
+    background: #f9f9f9;
+    color: #222;
+  }
+  h1 {
+    color: #333;
+  }
+  .warning {
+    background: #ffdddd;
+    border: 2px solid #cc0000;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    color: #a00;
+  }
+  form {
+    background: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 0 8px #ddd;
+    max-width: 600px;
+  }
+  label {
+    display: block;
+    margin-top: 1rem;
+  }
+  input[type="number"], select, textarea, input[type="file"] {
+    width: 100%;
+    padding: 0.4rem;
+    margin-top: 0.3rem;
+    box-sizing: border-box;
+  }
+  textarea {
+    height: 100px;
+    font-family: monospace;
+    resize: vertical;
+  }
+  button {
+    margin-top: 1.5rem;
+    background: #0078d7;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  button:disabled {
+    background: #999;
+    cursor: not-allowed;
+  }
+  .preview {
+    margin-top: 2rem;
+  }
+  .preview img {
+    max-width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+  .note {
+    font-size: 0.85rem;
+    margin-top: 0.2rem;
+    color: #555;
+  }
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    margin-top: 1rem;
+  }
+  .checkbox-label input {
+    margin-right: 0.5rem;
+  }
+  #downloadLink {
+    display: inline-block;
+    margin-top: 1rem;
+    background-color: #0078d7;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+  <h1>Advanced Image Editor</h1>
+
+  <div class="warning">
+    ⚠️ Warning: Embedding executable code inside image metadata is <strong>extremely dangerous</strong> and can cause serious security risks!<br>
+    Most image viewers and browsers <strong>do not run this code automatically</strong>. Only embed code if you understand the risks.<br>
+    Make sure to keep backups of your original images.
+  </div>
+
+  <form id="uploadForm" enctype="multipart/form-data">
+    <label>
+      Choose Image:
+      <input type="file" name="image" accept="image/*" required />
+    </label>
+
+    <label>
+      Width (px):
+      <input type="number" name="width" value="600" min="1" required />
+    </label>
+
+    <label>
+      Height (px):
+      <input type="number" name="height" value="400" min="1" required />
+    </label>
+
+    <label>
+      Format:
+      <select name="format" required>
+        <option value="jpeg">JPEG</option>
+        <option value="png">PNG</option>
+        <option value="webp">WebP</option>
+      </select>
+    </label>
+
+    <label>
+      Compression Quality (1-100):
+      <input type="number" name="quality" value="80" min="1" max="100" required />
+      <div class="note">Lower values reduce file size but may reduce quality.</div>
+    </label>
+
+    <label>
+      Metadata JSON (edit carefully):
+      <textarea name="metadata" placeholder='{"Author":"Your Name","Description":"Sample image"}'></textarea>
+      <div class="note">
+        Enter valid JSON. You can add custom keys, URLs, scripts, etc.<br>
+        Example to embed script code:<br>
+        <code>{"Comment":"&lt;script&gt;alert('XSS')&lt;/script&gt;"}</code>
+      </div>
+    </label>
+
+    <label class="checkbox-label">
+      <input type="checkbox" name="embedCode" />
+      Enable embedding <strong>executable code</strong> in metadata (dangerous)
+    </label>
+
+    <button type="submit">Process Image</button>
+  </form>
+
+  <div class="preview" style="display:none;">
+    <h2>Processed Image Preview</h2>
+    <img id="previewImage" alt="Processed preview" />
+    <br />
+    <a id="downloadLink" href="#" download="processed-image">⬇️ Download Processed Image</a>
+  </div>
+
+<script>
+  const form = document.getElementById('uploadForm');
+  const previewDiv = document.querySelector('.preview');
+  const previewImg = document.getElementById('previewImage');
+  const downloadLink = document.getElementById('downloadLink');
+
+  // Use relative URL if backend is deployed with frontend on Vercel
+  const backendURL = '/api/upload';
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+
+    // If embedCode unchecked, sanitize scripts in metadata
+    if (!formData.get('embedCode')) {
+      const metaText = formData.get('metadata');
+      if (metaText) {
+        try {
+          const json = JSON.parse(metaText);
+          for (const key in json) {
+            if (typeof json[key] === 'string' && json[key].toLowerCase().includes('<script')) {
+              json[key] = '[Removed dangerous script]';
+            }
+          }
+          formData.set('metadata', JSON.stringify(json));
+        } catch {
+          // ignore invalid JSON here
+        }
+      }
+    }
+
+    try {
+      const response = await fetch(backendURL, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        alert('Error processing image: ' + errText);
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      previewImg.src = url;
+      previewDiv.style.display = 'block';
+
+      // Setup download link with correct extension
+      const ext = formData.get('format') || 'jpeg';
+      downloadLink.href = url;
+      downloadLink.download = `processed-image.${ext}`;
+    } catch (err) {
+      alert('Request failed: ' + err.message);
+    }
+  });
+</script>
+
+</body>
+</html>
