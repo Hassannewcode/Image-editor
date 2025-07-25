@@ -1,4 +1,4 @@
-import { IncomingForm } from 'formidable';
+import formidable from 'formidable';
 import fs from 'fs';
 import sharp from 'sharp';
 import { exiftool } from 'exiftool-vendored';
@@ -10,7 +10,7 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  const form = new IncomingForm({ keepExtensions: true });
+  const form = new formidable.IncomingForm({ keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
@@ -26,11 +26,11 @@ export default async function handler(req, res) {
     const { width, height, format, metadata, quality, embedCode, allowDangerousCode } = fields;
 
     try {
-      // Read original image buffer
-      const fileBuffer = await fs.promises.readFile(files.image.filepath);
+      const filepath = files.image.filepath;
+      const inputBuffer = await fs.promises.readFile(filepath);
 
-      // Resize and convert
-      let img = sharp(fileBuffer)
+      // Resize and format conversion with quality
+      let img = sharp(inputBuffer)
         .resize(parseInt(width), parseInt(height))
         .toFormat(format, { quality: parseInt(quality) });
 
@@ -39,31 +39,26 @@ export default async function handler(req, res) {
       // Read original metadata
       let originalMeta = {};
       try {
-        originalMeta = await exiftool.read(files.image.filepath);
+        originalMeta = await exiftool.read(filepath);
       } catch {
         originalMeta = {};
       }
 
-      // Parse user metadata JSON if valid
-      let metaJSON = {};
+      // Parse user metadata JSON or empty
+      let userMeta = {};
       if (metadata && metadata.trim() !== '') {
         try {
-          metaJSON = JSON.parse(metadata);
+          userMeta = JSON.parse(metadata);
         } catch {
-          return res.status(400).send('Invalid JSON metadata');
+          res.status(400).send('Invalid JSON metadata');
+          return;
         }
       }
 
-      // Merge metadata ONLY if user provided some
-      let finalMeta = {};
-      if (Object.keys(metaJSON).length > 0) {
-        finalMeta = { ...originalMeta, ...metaJSON };
-      } else {
-        // No user metadata given - preserve original metadata fully
-        finalMeta = { ...originalMeta };
-      }
+      // Merge metadata: if user provided JSON, overwrite original keys, else preserve original entirely
+      let finalMeta = Object.keys(userMeta).length > 0 ? { ...originalMeta, ...userMeta } : { ...originalMeta };
 
-      // Embed code only if provided and allowed
+      // Embed code only if allowed and provided
       if (embedCode && embedCode.trim() !== '') {
         if (allowDangerousCode === 'on' || allowDangerousCode === true) {
           finalMeta.UserEmbedCode = embedCode;
@@ -72,35 +67,39 @@ export default async function handler(req, res) {
         }
       }
 
-      // Sanitize scripts if dangerous code not allowed
-      if (!allowDangerousCode || allowDangerousCode === 'false' || allowDangerousCode === undefined) {
-        for (const key in finalMeta) {
-          if (typeof finalMeta[key] === 'string' && finalMeta[key].toLowerCase().includes('<script')) {
-            finalMeta[key] = '[Removed dangerous script]';
+      // Sanitize scripts in metadata if dangerous code not allowed
+      if (!(allowDangerousCode === 'on' || allowDangerousCode === true)) {
+        for (const k in finalMeta) {
+          if (typeof finalMeta[k] === 'string' && finalMeta[k].toLowerCase().includes('<script')) {
+            finalMeta[k] = '[Removed dangerous script]';
           }
         }
       }
 
-      // Write to temp file first
-      const tmpPath = `/tmp/${files.image.newFilename}.${format}`;
-      await fs.promises.writeFile(tmpPath, outputBuffer);
+      // Save temp file before writing metadata
+      const tmpFile = `/tmp/${files.image.newFilename}.${format}`;
+      await fs.promises.writeFile(tmpFile, outputBuffer);
 
       // Write metadata
       try {
-        await exiftool.write(tmpPath, finalMeta);
+        await exiftool.write(tmpFile, finalMeta);
       } catch (exifErr) {
-        console.warn('Exiftool write error:', exifErr);
+        console.error('Exif write error:', exifErr);
       }
 
-      // Read final buffer and cleanup
-      const finalBuffer = await fs.promises.readFile(tmpPath);
-      await fs.promises.unlink(tmpPath);
+      // Read back final buffer with metadata
+      const finalBuffer = await fs.promises.readFile(tmpFile);
+
+      // Delete temp files
+      await fs.promises.unlink(filepath);
+      await fs.promises.unlink(tmpFile);
 
       res.setHeader('Content-Type', `image/${format}`);
+      res.setHeader('Content-Disposition', `inline; filename="processed-image.${format}"`);
       res.send(finalBuffer);
-    } catch (processErr) {
-      console.error(processErr);
-      res.status(500).send('Error processing image');
+    } catch (error) {
+      console.error('Processing error:', error);
+      res.status(500).send('Image processing error: ' + error.message);
     }
   });
 }
