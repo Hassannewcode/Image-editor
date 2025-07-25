@@ -1,7 +1,8 @@
-import formidable from 'formidable';
-import fs from 'fs';
-import sharp from 'sharp';
-import { exiftool } from 'exiftool-vendored';
+import formidable from "formidable";
+import fs from "fs/promises";
+import path from "path";
+import sharp from "sharp";
+import { exiftool } from "exiftool-vendored";
 
 export const config = {
   api: {
@@ -9,97 +10,103 @@ export const config = {
   },
 };
 
+const TMP_FOLDER = "/tmp";
+
 export default async function handler(req, res) {
-  const form = new formidable.IncomingForm({ keepExtensions: true });
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
+    return;
+  }
+
+  const form = formidable({
+    multiples: false,
+    keepExtensions: true,
+    uploadDir: TMP_FOLDER,
+  });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      res.status(500).send('Form parsing error: ' + err.message);
+      console.error("Form parse error:", err);
+      res.status(500).send("Error parsing the form");
       return;
     }
-
-    if (!files.image) {
-      res.status(400).send('No image uploaded');
-      return;
-    }
-
-    const { width, height, format, metadata, quality, embedCode, allowDangerousCode } = fields;
 
     try {
-      const filepath = files.image.filepath;
-      const inputBuffer = await fs.promises.readFile(filepath);
+      const imageFile = files.image.filepath;
+      const width = fields.width ? parseInt(fields.width) : null;
+      const height = fields.height ? parseInt(fields.height) : null;
+      const format = (fields.format || "png").toLowerCase();
+      const preset = fields.preset || "";
+      const metadataRaw = fields.metadata || "";
+      const embeddedCode = fields.code || "";
 
-      // Resize and format conversion with quality
-      let img = sharp(inputBuffer)
-        .resize(parseInt(width), parseInt(height))
-        .toFormat(format, { quality: parseInt(quality) });
-
-      const outputBuffer = await img.toBuffer();
-
-      // Read original metadata
-      let originalMeta = {};
-      try {
-        originalMeta = await exiftool.read(filepath);
-      } catch {
-        originalMeta = {};
-      }
-
-      // Parse user metadata JSON or empty
-      let userMeta = {};
-      if (metadata && metadata.trim() !== '') {
+      // Load metadata JSON if provided
+      let metadataObj = {};
+      if (metadataRaw) {
         try {
-          userMeta = JSON.parse(metadata);
-        } catch {
-          res.status(400).send('Invalid JSON metadata');
-          return;
+          metadataObj = JSON.parse(metadataRaw);
+        } catch (e) {
+          console.warn("Invalid metadata JSON, ignoring metadata input");
+          metadataObj = {};
         }
       }
 
-      // Merge metadata: if user provided JSON, overwrite original keys, else preserve original entirely
-      let finalMeta = Object.keys(userMeta).length > 0 ? { ...originalMeta, ...userMeta } : { ...originalMeta };
+      // If embedded code provided, store it in UserComment tag
+      if (embeddedCode) {
+        metadataObj.UserComment = embeddedCode;
+      }
 
-      // Embed code only if allowed and provided
-      if (embedCode && embedCode.trim() !== '') {
-        if (allowDangerousCode === 'on' || allowDangerousCode === true) {
-          finalMeta.UserEmbedCode = embedCode;
-        } else {
-          finalMeta.UserEmbedCode = '[Embedding disabled for safety]';
+      // Prepare sharp pipeline
+      let image = sharp(imageFile).rotate();
+
+      const originalMeta = await sharp(imageFile).metadata();
+      const newWidth = width || originalMeta.width;
+      const newHeight = height || originalMeta.height;
+
+      image = image.resize(newWidth, newHeight);
+
+      // Apply presets
+      if (preset === "compress") {
+        if (format === "jpeg") {
+          image = image.jpeg({ quality: 40 });
+        } else if (format === "png") {
+          image = image.png({ compressionLevel: 9 });
+        } else if (format === "webp") {
+          image = image.webp({ quality: 40 });
+        }
+      } else if (preset === "resize50") {
+        image = image.resize(Math.floor(originalMeta.width * 0.5), Math.floor(originalMeta.height * 0.5));
+      } else if (preset === "resize75") {
+        image = image.resize(Math.floor(originalMeta.width * 0.75), Math.floor(originalMeta.height * 0.75));
+      }
+
+      // Output temp file path
+      const tempOutPath = path.join(TMP_FOLDER, `out-${Date.now()}.${format}`);
+
+      // Save resized and formatted image to temp file
+      await image.toFile(tempOutPath);
+
+      // Write metadata with exiftool
+      if (Object.keys(metadataObj).length > 0) {
+        try {
+          await exiftool.write(tempOutPath, metadataObj);
+        } catch (e) {
+          console.warn("Exiftool metadata write failed:", e);
         }
       }
 
-      // Sanitize scripts in metadata if dangerous code not allowed
-      if (!(allowDangerousCode === 'on' || allowDangerousCode === true)) {
-        for (const k in finalMeta) {
-          if (typeof finalMeta[k] === 'string' && finalMeta[k].toLowerCase().includes('<script')) {
-            finalMeta[k] = '[Removed dangerous script]';
-          }
-        }
-      }
+      // Read final processed file
+      const finalBuffer = await fs.readFile(tempOutPath);
 
-      // Save temp file before writing metadata
-      const tmpFile = `/tmp/${files.image.newFilename}.${format}`;
-      await fs.promises.writeFile(tmpFile, outputBuffer);
+      // Cleanup temp files
+      await fs.unlink(imageFile);
+      await fs.unlink(tempOutPath);
 
-      // Write metadata
-      try {
-        await exiftool.write(tmpFile, finalMeta);
-      } catch (exifErr) {
-        console.error('Exif write error:', exifErr);
-      }
-
-      // Read back final buffer with metadata
-      const finalBuffer = await fs.promises.readFile(tmpFile);
-
-      // Delete temp files
-      await fs.promises.unlink(filepath);
-      await fs.promises.unlink(tmpFile);
-
-      res.setHeader('Content-Type', `image/${format}`);
-      res.setHeader('Content-Disposition', `inline; filename="processed-image.${format}"`);
+      res.setHeader("Content-Type", `image/${format === "jpeg" ? "jpeg" : format}`);
       res.send(finalBuffer);
     } catch (error) {
-      console.error('Processing error:', error);
-      res.status(500).send('Image processing error: ' + error.message);
+      console.error("Error processing image:", error);
+      res.status(500).send("Error processing image");
     }
   });
 }
