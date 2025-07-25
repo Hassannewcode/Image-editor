@@ -5,7 +5,7 @@ import { exiftool } from 'exiftool-vendored';
 
 export const config = {
   api: {
-    bodyParser: false, // Required for formidable
+    bodyParser: false,
   },
 };
 
@@ -23,21 +23,30 @@ export default async function handler(req, res) {
       return;
     }
 
-    const { width, height, format, metadata, quality, embedCode } = fields;
+    const { width, height, format, metadata, quality, embedCode, allowDangerousCode } = fields;
 
     try {
+      // Read original image buffer
       const fileBuffer = await fs.promises.readFile(files.image.filepath);
 
-      // Resize & convert
+      // Resize and convert
       let img = sharp(fileBuffer)
         .resize(parseInt(width), parseInt(height))
         .toFormat(format, { quality: parseInt(quality) });
 
-      let outputBuffer = await img.toBuffer();
+      const outputBuffer = await img.toBuffer();
 
-      // Prepare metadata JSON
+      // Read original metadata
+      let originalMeta = {};
+      try {
+        originalMeta = await exiftool.read(files.image.filepath);
+      } catch {
+        originalMeta = {};
+      }
+
+      // Parse user metadata JSON if valid
       let metaJSON = {};
-      if (metadata) {
+      if (metadata && metadata.trim() !== '') {
         try {
           metaJSON = JSON.parse(metadata);
         } catch {
@@ -45,25 +54,45 @@ export default async function handler(req, res) {
         }
       }
 
-      // If embedCode is false/unchecked, sanitize scripts
-      if (!embedCode || embedCode === 'false' || embedCode === undefined) {
-        for (const key in metaJSON) {
-          if (typeof metaJSON[key] === 'string' && metaJSON[key].toLowerCase().includes('<script')) {
-            metaJSON[key] = '[Removed dangerous script]';
+      // Merge metadata ONLY if user provided some
+      let finalMeta = {};
+      if (Object.keys(metaJSON).length > 0) {
+        finalMeta = { ...originalMeta, ...metaJSON };
+      } else {
+        // No user metadata given - preserve original metadata fully
+        finalMeta = { ...originalMeta };
+      }
+
+      // Embed code only if provided and allowed
+      if (embedCode && embedCode.trim() !== '') {
+        if (allowDangerousCode === 'on' || allowDangerousCode === true) {
+          finalMeta.UserEmbedCode = embedCode;
+        } else {
+          finalMeta.UserEmbedCode = '[Embedding disabled for safety]';
+        }
+      }
+
+      // Sanitize scripts if dangerous code not allowed
+      if (!allowDangerousCode || allowDangerousCode === 'false' || allowDangerousCode === undefined) {
+        for (const key in finalMeta) {
+          if (typeof finalMeta[key] === 'string' && finalMeta[key].toLowerCase().includes('<script')) {
+            finalMeta[key] = '[Removed dangerous script]';
           }
         }
       }
 
-      // Write metadata using exiftool (write to temp file)
+      // Write to temp file first
       const tmpPath = `/tmp/${files.image.newFilename}.${format}`;
       await fs.promises.writeFile(tmpPath, outputBuffer);
 
+      // Write metadata
       try {
-        await exiftool.write(tmpPath, metaJSON);
+        await exiftool.write(tmpPath, finalMeta);
       } catch (exifErr) {
         console.warn('Exiftool write error:', exifErr);
       }
 
+      // Read final buffer and cleanup
       const finalBuffer = await fs.promises.readFile(tmpPath);
       await fs.promises.unlink(tmpPath);
 
