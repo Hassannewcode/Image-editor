@@ -1,13 +1,8 @@
 {
-  "name": "image-editor",
+  "name": "vercel-image-editor",
   "version": "1.0.0",
-  "main": "api/upload.js",
-  "scripts": {
-    "start": "vercel dev"
-  },
   "dependencies": {
-    "exiftool-vendored": "^17.4.0",
-    "formidable": "^2.0.1",
-    "sharp": "^0.32.1"
+    "formidable": "^2.1.1",
+    "sharp": "^0.32.0"
   }
 }
