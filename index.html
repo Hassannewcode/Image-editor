@@ -2,27 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Image Editor</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .warning { color: red; margin-bottom: 20px; }
-    .preview { margin-top: 20px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .warning {
+      color: red;
+      margin-bottom: 20px;
+    }
+    .preview {
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
   <h1>Image Editor</h1>
   <div class="warning">
     <p>
-      Warning: Embedding executable code in images can pose security risks.
-      Backup your images before proceeding.
+      Warning: Embedding executable code in images can pose significant security risks. This code will run when the image is opened and may compromise the security of the viewing system. Proceed with caution.
+    </p>
+    <p>
+      Warning: This action may result in permanent data loss. Ensure you have backups of your original images before proceeding.
     </p>
   </div>
   <form id="uploadForm" enctype="multipart/form-data">
     <input type="file" name="image" accept="image/*" required />
     <br />
-    <label>Width: <input type="number" name="width" value="300" required /></label>
+    <label>
+      Width:
+      <input type="number" name="width" value="300" required />
+    </label>
     <br />
-    <label>Height: <input type="number" name="height" value="300" required /></label>
+    <label>
+      Height:
+      <input type="number" name="height" value="300" required />
+    </label>
     <br />
     <label>
       Format:
@@ -33,39 +50,135 @@
       </select>
     </label>
     <br />
-    <label>Metadata (JSON):<br />
-      <textarea name="metadata" rows="4" cols="40"></textarea>
+    <label>
+      Metadata (JSON):
+      <textarea name="metadata"></textarea>
     </label>
     <br />
     <button type="submit">Upload and Process</button>
   </form>
-
   <div class="preview">
     <h2>Preview:</h2>
     <img id="previewImage" src="" alt="Preview" />
   </div>
-
   <script>
-    const backendURL = 'https://YOUR_VERCEL_BACKEND_URL/api/upload'
+    // Replace the URL below with your deployed backend API URL:
+    const backendURL = 'https://YOUR_VERCEL_BACKEND_URL/api/upload';
 
     document.getElementById('uploadForm').addEventListener('submit', async (event) => {
-      event.preventDefault()
-      const formData = new FormData(event.target)
+      event.preventDefault();
+
+      const formData = new FormData(event.target);
 
       try {
         const response = await fetch(backendURL, {
           method: 'POST',
-          body: formData
-        })
-        if (!response.ok) throw new Error('Upload failed')
+          body: formData,
+        });
 
-        const blob = await response.blob()
-        const url = URL.createObjectURL(blob)
-        document.getElementById('previewImage').src = url
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          document.getElementById('previewImage').src = url;
+        } else {
+          alert('Error processing image');
+        }
       } catch (e) {
-        alert(e.message)
+        alert('Error: ' + e.message);
       }
-    })
+    });
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Image Editor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .warning {
+      color: red;
+      margin-bottom: 20px;
+    }
+    .preview {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Image Editor</h1>
+  <div class="warning">
+    <p>
+      Warning: Embedding executable code in images can pose significant security risks. This code will run when the image is opened and may compromise the security of the viewing system. Proceed with caution.
+    </p>
+    <p>
+      Warning: This action may result in permanent data loss. Ensure you have backups of your original images before proceeding.
+    </p>
+  </div>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="image" accept="image/*" required />
+    <br />
+    <label>
+      Width:
+      <input type="number" name="width" value="300" required />
+    </label>
+    <br />
+    <label>
+      Height:
+      <input type="number" name="height" value="300" required />
+    </label>
+    <br />
+    <label>
+      Format:
+      <select name="format" required>
+        <option value="jpeg">JPEG</option>
+        <option value="png">PNG</option>
+        <option value="webp">WebP</option>
+      </select>
+    </label>
+    <br />
+    <label>
+      Metadata (JSON):
+      <textarea name="metadata"></textarea>
+    </label>
+    <br />
+    <button type="submit">Upload and Process</button>
+  </form>
+  <div class="preview">
+    <h2>Preview:</h2>
+    <img id="previewImage" src="" alt="Preview" />
+  </div>
+  <script>
+    // Replace the URL below with your deployed backend API URL:
+    const backendURL = 'https://YOUR_VERCEL_BACKEND_URL/api/upload';
+
+    document.getElementById('uploadForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(event.target);
+
+      try {
+        const response = await fetch(backendURL, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          document.getElementById('previewImage').src = url;
+        } else {
+          alert('Error processing image');
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    });
   </script>
 </body>
 </html>
