@@ -3,110 +3,120 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Advanced Image Editor</title>
+<title>Ultimate Image Editor</title>
 <style>
   body {
-    font-family: Arial, sans-serif;
-    margin: 1rem 2rem;
-    background: #f0f2f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #fafafa;
+    margin: 2rem auto;
+    max-width: 700px;
     color: #222;
   }
   h1 {
-    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #34495e;
   }
   .warning {
-    background: #ffe4e6;
+    background: #ffe6e6;
     border: 2px solid #e74c3c;
     padding: 1rem;
-    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
     font-weight: bold;
     color: #a00;
-    border-radius: 8px;
   }
   form {
     background: white;
-    padding: 1.5rem 2rem;
+    padding: 1.8rem 2rem;
     border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    max-width: 600px;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.08);
   }
   label {
     display: block;
-    margin-top: 1rem;
+    margin-top: 1.2rem;
     font-weight: 600;
-    color: #34495e;
+    color: #2c3e50;
   }
-  select, input[type="number"], textarea, input[type="file"] {
+  input[type="number"], select, textarea, input[type="file"] {
     width: 100%;
     padding: 0.5rem;
-    margin-top: 0.3rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
+    margin-top: 0.4rem;
     font-size: 1rem;
-    font-family: inherit;
+    font-family: monospace;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
     transition: border-color 0.3s ease;
   }
-  select:hover, input[type="number"]:hover, textarea:hover, input[type="file"]:hover {
+  input[type="number"]:hover, select:hover, textarea:hover, input[type="file"]:hover {
     border-color: #2980b9;
   }
   textarea {
-    height: 100px;
-    font-family: monospace;
+    min-height: 100px;
     resize: vertical;
-    color: #2c3e50;
   }
   button {
-    margin-top: 1.8rem;
-    background: #2980b9;
-    color: white;
+    margin-top: 2rem;
+    background-color: #2980b9;
     border: none;
-    padding: 0.8rem 1.8rem;
+    padding: 0.85rem 2rem;
+    color: white;
+    font-weight: 700;
     font-size: 1.1rem;
-    border-radius: 7px;
+    border-radius: 8px;
     cursor: pointer;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(41,128,185,.5);
-    transition: background 0.3s ease;
+    box-shadow: 0 3px 8px rgba(41,128,185,0.6);
+    transition: background-color 0.3s ease;
   }
   button:hover:not(:disabled) {
-    background: #1f618d;
+    background-color: #1f618d;
   }
   button:disabled {
-    background: #95a5a6;
+    background-color: #95a5a6;
     cursor: not-allowed;
     box-shadow: none;
   }
   .preview {
-    margin-top: 2rem;
-    max-width: 600px;
+    margin-top: 2.5rem;
+    text-align: center;
   }
   .preview img {
     max-width: 100%;
+    border-radius: 12px;
     border: 1px solid #ccc;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
   }
   #downloadLink {
-    display: inline-block;
     margin-top: 1rem;
+    display: inline-block;
     background-color: #27ae60;
     color: white;
     padding: 0.6rem 1.4rem;
-    border-radius: 7px;
+    font-weight: 700;
+    border-radius: 8px;
     text-decoration: none;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(39,174,96,0.6);
+    box-shadow: 0 3px 8px rgba(39,174,96,0.7);
     transition: background-color 0.3s ease;
   }
   #downloadLink:hover {
     background-color: #1e8449;
   }
-  .note {
-    font-size: 0.85rem;
-    margin-top: 0.3rem;
-    color: #666;
-    font-style: italic;
+  #toggleAdvanced {
+    margin-top: 1.5rem;
+    cursor: pointer;
+    color: #2980b9;
+    user-select: none;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: underline;
+  }
+  #advancedSettings {
+    margin-top: 1.5rem;
+    background: #ecf0f1;
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    display: none;
   }
   .checkbox-label {
     margin-top: 1rem;
@@ -117,182 +127,219 @@
     margin-right: 0.6rem;
     vertical-align: middle;
   }
-  #presets {
-    margin-top: 0.6rem;
-    width: 100%;
-    font-size: 1rem;
-    border-radius: 5px;
-    padding: 0.4rem;
-  }
-  #advancedSettings {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #eef4f7;
-    border-radius: 8px;
-    display: none;
-  }
-  #toggleAdvanced {
-    margin-top: 1rem;
-    cursor: pointer;
-    color: #2980b9;
-    text-decoration: underline;
-    user-select: none;
+  .note {
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+    color: #555;
+    font-style: italic;
+    font-family: monospace;
+    white-space: pre-wrap;
   }
 </style>
 </head>
 <body>
-<h1>Advanced Image Editor</h1>
+<h1>Ultimate Image Editor</h1>
 
-<div class="warning">
-  ⚠️ Warning: Embedding executable code inside image metadata is <strong>extremely dangerous</strong> and can cause serious security risks!<br />
-  Most image viewers and browsers <strong>do not run this code automatically</strong>. Only embed code if you understand the risks.<br />
-  Always keep backups of your original images.
+<div class="warning" role="alert">
+  ⚠️ <strong>Warning:</strong> Embedding executable code inside image metadata is <em>very dangerous</em> and may cause security risks.  
+  Most image viewers do <strong>NOT</strong> run embedded code automatically.  
+  Use only if you fully understand the implications. Always backup originals.
 </div>
 
-<form id="uploadForm" enctype="multipart/form-data" autocomplete="off">
-  <label>
-    Choose Image:
-    <input type="file" name="image" accept="image/*" required />
-  </label>
+<form id="uploadForm" enctype="multipart/form-data" autocomplete="off" aria-label="Image editing form">
+  <label for="imageInput">Select Image</label>
+  <input id="imageInput" type="file" name="image" accept="image/*" required aria-required="true" />
 
-  <label for="presets">Choose Preset (auto-fills width, height, format, quality):</label>
-  <select id="presets" aria-label="Image editing presets">
+  <label for="presetSelect">Presets (auto-fill values, can be changed anytime)</label>
+  <select id="presetSelect" aria-label="Image presets">
     <option value="">-- Select Preset --</option>
-    <option value="thumb">Thumbnail 150x150, JPEG 70</option>
-    <option value="web">Web 800x600, WebP 80</option>
-    <option value="print">Print 2400x1800, PNG 100</option>
-    <option value="social">Social Media 1080x1080, JPEG 85</option>
+    <option value="thumbnail">Thumbnail 150x150 JPEG 70</option>
+    <option value="web">Web 800x600 WebP 80</option>
+    <option value="print">Print 2400x1800 PNG 100</option>
+    <option value="social">Social Media 1080x1080 JPEG 85</option>
+    <option value="metaCalc">Metadata + Embed Code: Opens Calculator</option>
   </select>
 
-  <label>
-    Width (px):
-    <input type="number" name="width" min="1" required />
-  </label>
+  <label for="widthInput">Width (px)</label>
+  <input id="widthInput" type="number" name="width" min="1" required aria-required="true" />
 
-  <label>
-    Height (px):
-    <input type="number" name="height" min="1" required />
-  </label>
+  <label for="heightInput">Height (px)</label>
+  <input id="heightInput" type="number" name="height" min="1" required aria-required="true" />
 
-  <label>
-    Format:
-    <select name="format" required>
-      <option value="jpeg">JPEG</option>
-      <option value="png">PNG</option>
-      <option value="webp">WebP</option>
-    </select>
-  </label>
+  <label for="formatSelect">Format</label>
+  <select id="formatSelect" name="format" required aria-required="true">
+    <option value="jpeg">JPEG</option>
+    <option value="png">PNG</option>
+    <option value="webp">WebP</option>
+  </select>
 
-  <label>
-    Compression Quality (1-100):
-    <input type="number" name="quality" value="80" min="1" max="100" required />
-    <div class="note">Lower values reduce file size but may reduce quality.</div>
-  </label>
+  <label for="qualityInput">Compression Quality (1-100)</label>
+  <input id="qualityInput" type="number" name="quality" min="1" max="100" value="80" required aria-required="true" />
+  <div class="note">Lower quality reduces file size but also image fidelity.</div>
 
-  <div id="toggleAdvanced">Show Advanced Settings ▼</div>
+  <div id="toggleAdvanced" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle advanced settings">Show Advanced Settings ▼</div>
 
-  <div id="advancedSettings">
-    <label>
-      Metadata JSON (optional):
-      <textarea name="metadata" placeholder='{"Author":"Your Name","Description":"Sample image"}'></textarea>
-      <div class="note">
-        Enter valid JSON. Add custom keys or URLs.<br />
-        Example to embed script code inside metadata:<br />
-        <code>{"Comment":"&lt;script&gt;alert('XSS')&lt;/script&gt;"}</code>
-      </div>
-    </label>
+  <section id="advancedSettings" aria-hidden="true">
+    <label for="metadataTextarea">Metadata JSON (optional)</label>
+    <textarea id="metadataTextarea" name="metadata" placeholder='{"Author":"Your Name","Description":"Image with metadata"}'></textarea>
+    <div class="note">
+      Enter valid JSON metadata.<br/>
+      Example for link: {"URL":"https://example.com"}<br/>
+      Example embedding script in Comment:<br/>
+      {"Comment":"&lt;script&gt;alert('XSS')&lt;/script&gt;"}
+    </div>
 
-    <label>
-      Embed Executable Code Directly (optional):
-      <textarea name="embedCode" placeholder="Paste your raw JavaScript or HTML code here..."></textarea>
-      <div class="note">
-        This code will be embedded inside the image metadata under a dedicated tag.<br />
-        Use this instead of Metadata JSON if you want a simple script embed.<br />
-        <strong>Warning:</strong> Executable code may pose security risks.
-      </div>
-    </label>
+    <label for="embedCodeTextarea">Embed Executable Code (optional)</label>
+    <textarea id="embedCodeTextarea" name="embedCode" placeholder="Paste JavaScript or HTML code here..."></textarea>
+    <div class="note">
+      This will embed your code in metadata (e.g. UserEmbedCode tag).<br/>
+      <strong>Only embed if you enable the checkbox below!</strong>
+    </div>
 
     <label class="checkbox-label">
-      <input type="checkbox" name="allowDangerousCode" />
-      Enable embedding <strong>executable code</strong> in image metadata (dangerous)
+      <input id="dangerousCheckbox" type="checkbox" name="allowDangerousCode" />
+      Enable embedding <strong>executable code</strong> (dangerous)
     </label>
-  </div>
+  </section>
 
-  <button type="submit">Process Image</button>
+  <button type="submit" aria-live="polite">Process Image</button>
 </form>
 
-<div class="preview" style="display:none;">
+<div class="preview" aria-live="polite" style="display:none;">
   <h2>Processed Image Preview</h2>
-  <img id="previewImage" alt="Processed preview" />
+  <img id="previewImage" alt="Processed image preview" />
   <br />
   <a id="downloadLink" href="#" download="processed-image">⬇️ Download Processed Image</a>
 </div>
 
 <script>
   const form = document.getElementById('uploadForm');
-  const previewDiv = document.querySelector('.preview');
-  const previewImg = document.getElementById('previewImage');
-  const downloadLink = document.getElementById('downloadLink');
-  const presetsSelect = document.getElementById('presets');
-  const toggleAdvanced = document.getElementById('toggleAdvanced');
+  const presetSelect = document.getElementById('presetSelect');
+  const widthInput = document.getElementById('widthInput');
+  const heightInput = document.getElementById('heightInput');
+  const formatSelect = document.getElementById('formatSelect');
+  const qualityInput = document.getElementById('qualityInput');
+  const metadataTextarea = document.getElementById('metadataTextarea');
+  const embedCodeTextarea = document.getElementById('embedCodeTextarea');
+  const dangerousCheckbox = document.getElementById('dangerousCheckbox');
   const advancedSettings = document.getElementById('advancedSettings');
+  const toggleAdvanced = document.getElementById('toggleAdvanced');
 
+  const previewDiv = document.querySelector('.preview');
+  const previewImage = document.getElementById('previewImage');
+  const downloadLink = document.getElementById('downloadLink');
+
+  // Preset definitions
   const presets = {
-    thumb: { width: 150, height: 150, format: 'jpeg', quality: 70 },
-    web: { width: 800, height: 600, format: 'webp', quality: 80 },
-    print: { width: 2400, height: 1800, format: 'png', quality: 100 },
-    social: { width: 1080, height: 1080, format: 'jpeg', quality: 85 },
+    thumbnail: {
+      width: 150,
+      height: 150,
+      format: 'jpeg',
+      quality: 70,
+      metadata: '',
+      embedCode: ''
+    },
+    web: {
+      width: 800,
+      height: 600,
+      format: 'webp',
+      quality: 80,
+      metadata: '',
+      embedCode: ''
+    },
+    print: {
+      width: 2400,
+      height: 1800,
+      format: 'png',
+      quality: 100,
+      metadata: '',
+      embedCode: ''
+    },
+    social: {
+      width: 1080,
+      height: 1080,
+      format: 'jpeg',
+      quality: 85,
+      metadata: '',
+      embedCode: ''
+    },
+    metaCalc: {
+      width: 600,
+      height: 600,
+      format: 'png',
+      quality: 90,
+      metadata: JSON.stringify({
+        Author: "Embedded Calculator",
+        Description: "Image with embedded code to launch calculator"
+      }, null, 2),
+      embedCode: `<script>
+      alert('Calculator code running inside metadata! (Demo)');
+      // Real code to launch calculator would go here
+      </script>`
+    }
   };
 
-  // Toggle advanced settings visibility
+  // Toggle advanced settings
   toggleAdvanced.addEventListener('click', () => {
-    if (advancedSettings.style.display === 'none') {
+    if (advancedSettings.style.display === 'none' || advancedSettings.style.display === '') {
       advancedSettings.style.display = 'block';
       toggleAdvanced.textContent = 'Hide Advanced Settings ▲';
+      toggleAdvanced.setAttribute('aria-pressed', 'true');
+      advancedSettings.setAttribute('aria-hidden', 'false');
     } else {
       advancedSettings.style.display = 'none';
       toggleAdvanced.textContent = 'Show Advanced Settings ▼';
+      toggleAdvanced.setAttribute('aria-pressed', 'false');
+      advancedSettings.setAttribute('aria-hidden', 'true');
+    }
+  });
+  toggleAdvanced.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleAdvanced.click();
     }
   });
 
-  presetsSelect.addEventListener('change', e => {
+  // When preset changes, fill form but do NOT overwrite user changed width/height if they uploaded image
+  presetSelect.addEventListener('change', e => {
     const val = e.target.value;
     if (val && presets[val]) {
       const preset = presets[val];
-      form.elements['width'].value = preset.width;
-      form.elements['height'].value = preset.height;
-      form.elements['format'].value = preset.format;
-      form.elements['quality'].value = preset.quality;
+      widthInput.value = preset.width;
+      heightInput.value = preset.height;
+      formatSelect.value = preset.format;
+      qualityInput.value = preset.quality;
+      metadataTextarea.value = preset.metadata || '';
+      embedCodeTextarea.value = preset.embedCode || '';
     }
   });
 
-  // Auto-fill width/height from image file on upload
-  form.elements['image'].addEventListener('change', (e) => {
+  // On image upload, auto-fill width and height with actual image dimensions
+  form.image.addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
 
     const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-
+    const url = URL.createObjectURL(file);
     img.onload = () => {
-      form.elements['width'].value = img.naturalWidth;
-      form.elements['height'].value = img.naturalHeight;
-      URL.revokeObjectURL(objectUrl);
+      widthInput.value = img.naturalWidth;
+      heightInput.value = img.naturalHeight;
+      URL.revokeObjectURL(url);
     };
-    img.onerror = () => {
-      // fallback if image can't load
-      URL.revokeObjectURL(objectUrl);
-    };
+    img.onerror = () => URL.revokeObjectURL(url);
+    img.src = url;
 
-    img.src = objectUrl;
+    // Clear presets selection (user manually uploaded)
+    presetSelect.value = '';
   });
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
 
+    // Prepare form data
     const formData = new FormData(form);
 
-    // Sanitize metadata JSON if dangerous code NOT allowed
+    // Sanitize metadata if dangerous code not allowed
     const allowDangerous = formData.get('allowDangerousCode');
     if (!allowDangerous) {
       const metaText = formData.get('metadata');
@@ -306,16 +353,16 @@
           }
           formData.set('metadata', JSON.stringify(json));
         } catch {
-          // ignore invalid JSON here
+          // ignore invalid json
         }
       }
-      // Sanitize embedCode
       const codeText = formData.get('embedCode');
       if (codeText && codeText.toLowerCase().includes('<script')) {
         formData.set('embedCode', '[Removed dangerous script]');
       }
     }
 
+    // Fetch API call to backend
     try {
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -323,15 +370,15 @@
       });
 
       if (!response.ok) {
-        const errText = await response.text();
-        alert('Error processing image: ' + errText);
+        const text = await response.text();
+        alert('Error processing image: ' + text);
         return;
       }
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
 
-      previewImg.src = url;
+      previewImage.src = url;
       previewDiv.style.display = 'block';
 
       const ext = formData.get('format') || 'jpeg';
