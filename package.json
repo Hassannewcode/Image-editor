@@ -1,8 +1,9 @@
 {
-  "name": "image-editor",
+  "name": "image-editor-vercel",
   "version": "1.0.0",
   "dependencies": {
     "formidable": "^2.1.1",
-    "sharp": "^0.32.0"
+    "sharp": "^0.32.1",
+    "buffer-crc32": "^0.2.13"
   }
 }
