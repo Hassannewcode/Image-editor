@@ -1,8 +1,6 @@
-import formidable from "formidable";
-import fs from "fs/promises";
-import path from "path";
-import sharp from "sharp";
-import { exiftool } from "exiftool-vendored";
+import formidable from 'formidable';
+import sharp from 'sharp';
+import fs from 'fs';
 
 export const config = {
   api: {
@@ -10,112 +8,67 @@ export const config = {
   },
 };
 
-const TMP_FOLDER = "/tmp";
-
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.status(405).send("Method Not Allowed");
+  if (req.method !== 'POST') {
+    res.status(405).send('Only POST allowed');
     return;
   }
 
-  const form = formidable({
-    multiples: false,
-    keepExtensions: true,
-    uploadDir: TMP_FOLDER,
-  });
+  const form = new formidable.IncomingForm();
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error("Form parse error:", err);
-      res.status(500).send("Error parsing the form");
+      res.status(500).send('Error parsing form');
+      return;
+    }
+
+    const imageFile = files.image;
+    if (!imageFile) {
+      res.status(400).send('Image file is required');
       return;
     }
 
     try {
-      const imageFile = files.image.filepath;
-      const width = fields.width ? parseInt(fields.width) : null;
-      const height = fields.height ? parseInt(fields.height) : null;
-      const format = (fields.format || "png").toLowerCase();
-      const preset = fields.preset || "";
-      const metadataRaw = fields.metadata || "";
-      const embeddedCode = fields.code || "";
+      let width = parseInt(fields.width);
+      let height = parseInt(fields.height);
+      const format = (fields.format || 'jpeg').toLowerCase();
+      const metadataText = fields.metadata || '';
 
-      // Load metadata JSON if provided
-      let metadataObj = {};
-      if (metadataRaw) {
-        try {
-          metadataObj = JSON.parse(metadataRaw);
-        } catch (e) {
-          console.warn("Invalid metadata JSON, ignoring metadata input");
-          metadataObj = {};
+      // Load image and get original dimensions
+      let image = sharp(imageFile.filepath);
+      const origMeta = await image.metadata();
+
+      // Auto-adjust width/height if empty or invalid
+      if (!width || width <= 0) width = origMeta.width;
+      if (!height || height <= 0) height = origMeta.height;
+
+      image = image.resize(width, height, { fit: 'inside', withoutEnlargement: true });
+
+      // Prepare output options & embed metadata (comment or text chunk)
+      const outputOptions = {};
+      if (format === 'jpeg') {
+        outputOptions.mozjpeg = true;
+        if (metadataText) {
+          outputOptions.comment = metadataText;
+        }
+      } else if (format === 'png') {
+        if (metadataText) {
+          outputOptions.text = { Description: metadataText };
         }
       }
+      // webp doesn't support metadata embedding well in sharp, skip
 
-      // If embedded code provided, store it in UserComment tag
-      if (embeddedCode) {
-        metadataObj.UserComment = embeddedCode;
-      }
+      const buffer = await image.toFormat(format, outputOptions).toBuffer();
 
-      // Prepare sharp pipeline
-      let image = sharp(imageFile).rotate();
+      // Clean up uploaded temp file
+      fs.unlink(imageFile.filepath, () => {});
 
-      const originalMeta = await sharp(imageFile).metadata();
-      const newWidth = width || originalMeta.width;
-      const newHeight = height || originalMeta.height;
-
-      image = image.resize(newWidth, newHeight);
-
-      // Apply presets
-      if (preset === "compress") {
-        if (format === "jpeg") {
-          image = image.jpeg({ quality: 40 });
-        } else if (format === "png") {
-          image = image.png({ compressionLevel: 9 });
-        } else if (format === "webp") {
-          image = image.webp({ quality: 40 });
-        }
-      } else if (preset === "resize50") {
-        image = image.resize(Math.floor(originalMeta.width * 0.5), Math.floor(originalMeta.height * 0.5));
-      } else if (preset === "resize75") {
-        image = image.resize(Math.floor(originalMeta.width * 0.75), Math.floor(originalMeta.height * 0.75));
-      } else if (preset === "embedCalculator") {
-        // Embed JS code to open a calculator alert when previewed
-        metadataObj.UserComment = `
-          alert('Calculator launch simulation!');
-          const calcWindow = window.open('', 'Calculator', 'width=300,height=400');
-          if (calcWindow) {
-            calcWindow.document.write('<h1>Calculator</h1><input type="text" id="calcInput" style="font-size:24px; width: 90%;"><br><br><button onclick="calculate()">Calculate</button><script>function calculate(){try{const val=eval(document.getElementById("calcInput").value);alert("Result: "+val);}catch(e){alert("Error: "+e.message);}}</script>');
-          }
-        `;
-      }
-
-      // Output temp file path
-      const tempOutPath = path.join(TMP_FOLDER, `out-${Date.now()}.${format}`);
-
-      // Save resized and formatted image to temp file
-      await image.toFile(tempOutPath);
-
-      // Write metadata with exiftool
-      if (Object.keys(metadataObj).length > 0) {
-        try {
-          await exiftool.write(tempOutPath, metadataObj);
-        } catch (e) {
-          console.warn("Exiftool metadata write failed:", e);
-        }
-      }
-
-      // Read final processed file
-      const finalBuffer = await fs.readFile(tempOutPath);
-
-      // Cleanup temp files
-      await fs.unlink(imageFile);
-      await fs.unlink(tempOutPath);
-
-      res.setHeader("Content-Type", `image/${format === "jpeg" ? "jpeg" : format}`);
-      res.send(finalBuffer);
+      res.setHeader('Content-Type', `image/${format}`);
+      res.setHeader('Cache-Control', 'no-store'); // prevent caching for test
+      res.send(buffer);
     } catch (error) {
-      console.error("Error processing image:", error);
-      res.status(500).send("Error processing image");
+      console.error(error);
+      res.status(500).send('Image processing error');
     }
   });
 }
